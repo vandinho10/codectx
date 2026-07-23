@@ -1,0 +1,13 @@
+# Binário compilado
+codectx
+
+# Arquivos de objeto (se o seu Makefile gerar no futuro)
+*.o
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Pastas de IDEs/Editores
+.vscode/
+.idea/

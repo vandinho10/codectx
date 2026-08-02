@@ -1,5 +1,5 @@
 # Binário compilado
-codectx
+codectx*
 
 # Arquivos de objeto (se o seu Makefile gerar no futuro)
 *.o

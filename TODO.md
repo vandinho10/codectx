@@ -2,9 +2,10 @@
 
 > Atualizado ao criar planejamento e conforme cada ponto for concluído.
 
-## Em andamento
+## Concluído
 
-- [ ] Padronização de documentação (concluída nesta atividade).
+- [x] Licenciamento (eixo A2): `LICENSE` (MIT) + `NOTICE` na raiz do repo.
+- [x] Padronização de documentação (concluída nesta atividade).
 
 ## Pendências
 

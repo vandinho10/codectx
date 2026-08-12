@@ -4,6 +4,11 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`) com [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
+## [Unreleased]
+
+### Adicionado
+- `LICENSE` (MIT) + `NOTICE` na raiz do repositório (licenciamento do projeto).
+
 ## [1.0.0] - 2026-08-07
 
 ### Adicionado

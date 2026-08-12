@@ -1,0 +1,11 @@
+codectx — NOTICE
+
+Copyright (c) 2026 Vanderson Oliveira.
+
+This submodule is licensed under the MIT License (see LICENSE).
+
+Third-party notices
+===================
+
+Este projeto não possui dependências externas: usa apenas a biblioteca
+padrão C++17 e a stdlib do compilador. Sem avisos de terceiros a preservar.

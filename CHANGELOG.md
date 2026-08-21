@@ -6,8 +6,14 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-21
+
 ### Adicionado
-- `LICENSE` (MIT) + `NOTICE` na raiz do repositório (licenciamento do projeto).
+- CI/CD: GitHub Actions com Docker + QEMU para build multi-arch (x86_64, aarch64, arm32).
+- Binários compilados na release: `codectx-linux-x86_64`, `codectx-linux-aarch64`, `codectx-linux-arm32`.
+
+### Corrigido
+- `.gitignore`: permitido binário por arch (ignora apenas `codectx-linux-x86_64`).
 
 ## [1.0.0] - 2026-08-07
 

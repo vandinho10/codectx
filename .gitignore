@@ -1,6 +1,6 @@
 # Binário compilado
 /codectx
-codectx-linux-amd64
+codectx-linux-x86_64
 
 # Binários de teste
 tests/test_runner

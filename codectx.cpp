@@ -70,12 +70,14 @@ bool parse_args(int argc, char *argv[], Config &cfg)
         else if (arg == "--no-rec")
         {
             cfg.recursivo = false;
+            cfg.cli_no_rec = true;
         }
         else if (arg == "-o" || arg == "--output")
         {
             if (i + 1 < argc)
             {
                 cfg.arquivo_saida = argv[++i];
+                cfg.cli_output = true;
             }
             estado_atual = ParseState::ALVOS;
         }
@@ -114,12 +116,14 @@ bool parse_args(int argc, char *argv[], Config &cfg)
                     if (possivel_alvo.has_parent_path() || fs::exists(possivel_alvo, ec))
                     {
                         cfg.alvos.push_back(arg);
+                        cfg.cli_alvos = true;
                     }
                     else
                     {
                         if (!arg.empty() && arg[0] == '.')
                             arg = arg.substr(1);
                         cfg.extensoes_permitidas.push_back(arg);
+                        cfg.cli_ext = true;
                     }
                     break;
                 }
@@ -127,21 +131,26 @@ bool parse_args(int argc, char *argv[], Config &cfg)
                 {
                     fs::path filepath(arg);
                     cfg.nomes_permitidos.push_back(filepath.filename().string());
+                    cfg.cli_file = true;
                     if (filepath.has_parent_path())
                     {
                         cfg.alvos.push_back(arg);
+                        cfg.cli_alvos = true;
                     }
                     break;
                 }
                 case ParseState::ADD:
                     cfg.arquivos_adicionais.push_back(arg);
+                    cfg.cli_add = true;
                     break;
                 case ParseState::NOT:
                     cfg.lista_ignorar_manual.push_back(arg);
+                    cfg.cli_not = true;
                     break;
                 case ParseState::ALVOS:
                 default:
                     cfg.alvos.push_back(arg);
+                    cfg.cli_alvos = true;
                     break;
             }
         }

@@ -3,6 +3,10 @@
 codectx-linux-x86_64
 codectx-linux-amd64
 
+# Binários de release (gerados pelo CI / cross.sh)
+*.exe
+/dist/
+
 # Binários de teste
 tests/test_runner
 tests/test_runner_san

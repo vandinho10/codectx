@@ -6,6 +6,21 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-22
+
+### Adicionado
+- Suporte a **Windows**: binários estáticos `codectx-windows-amd64.exe` e
+  `codectx-windows-x86.exe` via cross-compile mingw-w64 (`make
+  TARGET_OS=Windows_NT`), zero dependências em runtime. Validado em máquina
+  Windows real (v1.1.0: recursão, filtro por extensão e `-o` funcionais).
+- Construtor multiplataforma `cross.sh` (nativo + containers docker +
+  mingw), mesmo padrão do projeto `invpush`.
+- CI: matriz de release estendida com os dois alvos Windows (5 artefatos).
+
+### Alterado
+- `Makefile`: variável `TARGET_OS` com linkagem estática no Windows;
+  `clean` remove também o `.exe` gerado pelo ld PE.
+
 ## [1.1.0] - 2026-08-21
 
 ### Adicionado

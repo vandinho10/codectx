@@ -403,6 +403,329 @@ TEST("regressao: -e cpp + diretorio existente nao engole o alvo")
     CHECK(out.str().find("a.txt") == std::string::npos);
 }
 
+// ============ configuração persistente ============
+
+#include <cstdio>
+
+// Helper: executa comando_config com argv sintético.
+static int rodar_config(std::vector<std::string> args)
+{
+    std::vector<char *> ptrs;
+    for (auto &s : args)
+        ptrs.push_back(const_cast<char *>(s.c_str()));
+    std::string prog = "codectx";
+    std::vector<char *> argv{const_cast<char *>(prog.c_str())};
+    for (auto &p : ptrs)
+        argv.push_back(p);
+    return comando_config(static_cast<int>(argv.size()), argv.data());
+}
+
+static std::string ler_arquivo(const fs::path &p)
+{
+    std::ifstream f(p);
+    return std::string((std::istreambuf_iterator<char>(f)),
+                       std::istreambuf_iterator<char>());
+}
+
+TEST("NivelConfig: define/busca/acrescenta/remove")
+{
+    NivelConfig n;
+    CHECK(n.vazia() == true);
+    CHECK(n.busca("ext") == nullptr);
+
+    n.define("ext", {"cpp", "hpp"});
+    const auto *ext = n.busca("ext");
+    CHECK(n.vazia() == false);
+    CHECK(ext != nullptr);
+    if (ext == nullptr)
+        return;
+    CHECK(ext->size() == 2);
+
+    n.acrescenta("ext", {"cpp", "js"}); // cpp duplicado não entra
+    ext = n.busca("ext");
+    if (ext != nullptr)
+        CHECK(ext->size() == 3);
+
+    n.define("ext", {"rs"}); // define substitui
+    ext = n.busca("ext");
+    if (ext != nullptr)
+        CHECK(ext->size() == 1 && (*ext)[0] == "rs");
+
+    n.remove("ext");
+    CHECK(n.busca("ext") == nullptr && n.vazia() == true);
+}
+
+TEST("chave_valida aceita exatamente as 7 chaves")
+{
+    CHECK(chave_valida("alvos") && chave_valida("ext") && chave_valida("file"));
+    CHECK(chave_valida("add") && chave_valida("not") && chave_valida("output"));
+    CHECK(chave_valida("no-rec"));
+    CHECK(chave_valida("outra") == false);
+    CHECK(chave_valida("") == false);
+}
+
+TEST("valor_bool interpreta variantes e cai no padrao")
+{
+    CHECK(valor_bool("true", false) == true);
+    CHECK(valor_bool("TRUE", false) == true);
+    CHECK(valor_bool(" 1 ", true) == true);
+    CHECK(valor_bool("sim", false) == true);
+    CHECK(valor_bool("false", true) == false);
+    CHECK(valor_bool("off", true) == false);
+    CHECK(valor_bool("nao", true) == false);
+    CHECK(valor_bool("lixo", true) == true);   // padrao
+    CHECK(valor_bool("lixo", false) == false); // padrao
+}
+
+TEST("caminho_config_global respeita CODECTX_CONFIG_HOME")
+{
+#ifdef _WIN32
+    _putenv_s("CODECTX_CONFIG_HOME", R"(C:\sandbox)");
+#else
+    setenv("CODECTX_CONFIG_HOME", "/sandbox", 1);
+#endif
+    const fs::path p = caminho_config_global();
+#ifdef _WIN32
+    CHECK(p == fs::path(R"(C:\sandbox)") / "codectx" / "config.txt");
+#else
+    CHECK(p == fs::path("/sandbox") / "codectx" / "config");
+#endif
+#ifdef _WIN32
+    _putenv_s("CODECTX_CONFIG_HOME", "");
+#else
+    unsetenv("CODECTX_CONFIG_HOME");
+#endif
+}
+
+TEST("descobrir_config_local sobe a hierarquia ate encontrar .codectx")
+{
+    TempDir raiz;
+    fs::create_directories(raiz.dir / "a" / "b");
+    escrever(raiz.dir / ".codectx", "ext=php\n");
+
+    CHECK(descobrir_config_local(raiz.dir / "a" / "b").empty() == false);
+    CHECK(descobrir_config_local(raiz.dir / "a" / "b").filename() == ".codectx");
+    CHECK(descobrir_config_local(raiz.dir).filename() == ".codectx");
+
+    TempDir sem_config;
+    CHECK(descobrir_config_local(sem_config.dir).empty());
+}
+
+TEST("carregar_nivel: formato chave=valor, comentarios e lixo ignorado")
+{
+    TempDir td;
+    escrever(td.dir / "cfg",
+             "# comentario\n"
+             "\n"
+             "ext=php\n"
+             "ext = js \n"
+             "no-rec=true\n"
+             "sem-igual\n"
+             "desconhecida=x\n"
+             "output=out.md\n");
+
+    // stderr recebe avisos; silencia para nao poluir o teste
+    std::ostringstream vazio;
+    auto *antigo = std::cerr.rdbuf(vazio.rdbuf());
+    const NivelConfig n = carregar_nivel(td.dir / "cfg");
+    std::cerr.rdbuf(antigo);
+
+    const auto *v_ext = n.busca("ext");
+    CHECK(v_ext != nullptr);
+    if (v_ext == nullptr)
+        return;
+    CHECK(v_ext->size() == 2);
+    CHECK((*v_ext)[0] == "php");
+    CHECK((*v_ext)[1] == "js");
+    CHECK(n.busca("desconhecida") == nullptr);
+
+    const auto *v_rec = n.busca("no-rec");
+    CHECK(v_rec != nullptr);
+    if (v_rec != nullptr)
+        CHECK(valor_bool((*v_rec)[0], true) == true);
+
+    const auto *v_out = n.busca("output");
+    CHECK(v_out != nullptr);
+    if (v_out != nullptr)
+        CHECK((*v_out)[0] == "out.md");
+}
+
+TEST("salvar/carregar roundtrip deterministico com valor contendo '='")
+{
+    TempDir td;
+    NivelConfig n;
+    n.define("not", {"*.min.js", "segredo=senha.txt"});
+    n.define("no-rec", {"false"});
+    n.define("alvos", {"src"});
+    CHECK(salvar_nivel(td.dir / "cfg", n) == true);
+
+    const std::string bruto = ler_arquivo(td.dir / "cfg");
+    CHECK(bruto.find("not=segredo=senha.txt") != std::string::npos);
+    CHECK(bruto.find("# codectx") != std::string::npos);
+
+    const NivelConfig lido = carregar_nivel(td.dir / "cfg");
+    const auto *v_not = lido.busca("not");
+    CHECK(v_not != nullptr);
+    if (v_not == nullptr)
+        return;
+    CHECK(v_not->size() == 2);
+    const auto *v_alvos = lido.busca("alvos");
+    CHECK(v_alvos != nullptr);
+    if (v_alvos != nullptr)
+        CHECK((*v_alvos)[0] == "src");
+    // chaves gravadas em ordem alfabetica
+    CHECK(bruto.find("alvos=") < bruto.find("no-rec="));
+    CHECK(bruto.find("no-rec=") < bruto.find("not="));
+}
+
+TEST("mesclar_niveis: local sobrepoe global por chave inteira")
+{
+    NivelConfig g, l;
+    g.define("ext", {"cpp", "hpp"});
+    g.define("output", {"global.md"});
+    l.define("ext", {"php"});
+
+    const NivelConfig m = mesclar_niveis(g, l);
+    const auto *v_ext = m.busca("ext");
+    CHECK(v_ext != nullptr);
+    if (v_ext == nullptr)
+        return;
+    CHECK(v_ext->size() == 1 && (*v_ext)[0] == "php");
+
+    const auto *v_out = m.busca("output");
+    CHECK(v_out != nullptr);
+    if (v_out == nullptr)
+        return;
+    CHECK((*v_out)[0] == "global.md");
+}
+
+TEST("aplicar_config: preenche categorias ausentes na CLI")
+{
+    Config cli = parse({"-e", "cpp"}); // CLI definiu ext; resto vazio
+    NivelConfig cfg;
+    cfg.define("ext", {"php"});       // deve ser IGNORADO (CLI vence)
+    cfg.define("file", {"Makefile"}); // deve ser aplicado
+    cfg.define("not", {"rascunho"});
+    cfg.define("alvos", {"src"});
+    aplicar_config(cli, cfg);
+
+    CHECK(cli.extensoes_permitidas.size() == 1 && cli.extensoes_permitidas[0] == "cpp");
+    CHECK(cli.cli_ext == true);
+    CHECK(cli.nomes_permitidos.size() == 1);
+    if (!cli.nomes_permitidos.empty())
+        CHECK(cli.nomes_permitidos[0] == "Makefile");
+    // alvos da CLI ('.' default) sao preservados quando config tem alvos? NAO:
+    // CLI nao definiu alvo explicitamente -> config substitui
+    CHECK(cli.alvos.size() == 1 && cli.alvos[0] == "src");
+    CHECK(cli.tem_extensoes == true);
+}
+
+TEST("aplicar_config: not e add sempre somam com a CLI")
+{
+    Config cli = parse({"-n", "cli.txt", "-a", "extra_cli"});
+    NivelConfig cfg;
+    cfg.define("not", {"cli.txt", "cfg.txt"});
+    cfg.define("add", {"extra_cfg"});
+    aplicar_config(cli, cfg);
+
+    CHECK(cli.lista_ignorar_manual.size() == 2); // união sem duplicatas
+    CHECK(cli.arquivos_adicionais.size() == 2);
+    bool tem_extra_cfg = false;
+    for (const auto &a : cli.alvos)
+        if (a == "extra_cfg")
+            tem_extra_cfg = true;
+    CHECK(tem_extra_cfg == true);
+}
+
+TEST("aplicar_config: output da config replica auto-ignore")
+{
+    Config cli = parse({});
+    NivelConfig cfg;
+    cfg.define("output", {"relatorio.md"});
+    aplicar_config(cli, cfg);
+
+    CHECK(cli.arquivo_saida == "relatorio.md");
+    CHECK(cli.lista_ignorar_manual.size() == 1);
+    CHECK(cli.lista_ignorar_manual[0] == "relatorio.md");
+}
+
+TEST("aplicar_config: no-rec da config aplica somente se CLI nao usou --no-rec")
+{
+    Config cli_sem_flag = parse({});
+    NivelConfig cfg;
+    cfg.define("no-rec", {"true"});
+    aplicar_config(cli_sem_flag, cfg);
+    CHECK(cli_sem_flag.recursivo == false);
+
+    Config cli_com_flag = parse({"--no-rec"});
+    cfg.define("no-rec", {"false"});
+    aplicar_config(cli_com_flag, cfg);
+    CHECK(cli_com_flag.recursivo == false); // CLI vence
+}
+
+TEST("comando_config: ciclo set -> get -> list -> unset em escopo global sandbox")
+{
+#ifdef _WIN32
+    TempDir td;
+    std::string home = td.dir.string();
+    _putenv_s("CODECTX_CONFIG_HOME", home.c_str());
+#else
+    TempDir td;
+    setenv("CODECTX_CONFIG_HOME", td.dir.string().c_str(), 1);
+#endif
+
+    CHECK(rodar_config({"config", "set", "ext", "php", "js"}) == EXIT_SUCCESS);
+    CHECK(fs::exists(caminho_config_global()));
+
+    CHECK(rodar_config({"config", "get", "ext"}) == EXIT_SUCCESS);
+    CHECK(rodar_config({"config", "list"}) == EXIT_SUCCESS);
+    CHECK(rodar_config({"config", "get", "inexistente"}) == EXIT_FAILURE);
+    CHECK(rodar_config({"config", "set", "chave_mala", "x"}) == EXIT_FAILURE);
+    CHECK(rodar_config({"config", "verbo_falso"}) == EXIT_FAILURE);
+
+    CHECK(rodar_config({"config", "unset", "ext"}) == EXIT_SUCCESS);
+    CHECK(rodar_config({"config", "get", "ext"}) == EXIT_FAILURE);
+
+#ifdef _WIN32
+    _putenv_s("CODECTX_CONFIG_HOME", "");
+#else
+    unsetenv("CODECTX_CONFIG_HOME");
+#endif
+}
+
+TEST("comando_config: --local grava ./.codectx no diretorio atual")
+{
+#ifdef _WIN32
+    TempDir td;
+    std::string home = td.dir.string();
+    _putenv_s("CODECTX_CONFIG_HOME", home.c_str());
+#else
+    TempDir td;
+    setenv("CODECTX_CONFIG_HOME", td.dir.string().c_str(), 1);
+#endif
+
+    const fs::path original = fs::current_path();
+    fs::current_path(td.dir); // cwd do teste
+    CHECK(rodar_config({"config", "--local", "set", "output", "ctx.md"}) == EXIT_SUCCESS);
+    CHECK(fs::exists(td.dir / ".codectx"));
+
+    const NivelConfig lido = carregar_nivel(td.dir / ".codectx");
+    const auto *v_out = lido.busca("output");
+    CHECK(v_out != nullptr);
+    if (v_out == nullptr)
+        return;
+    CHECK((*v_out)[0] == "ctx.md");
+
+    CHECK(descobrir_config_local(td.dir) == td.dir / ".codectx");
+    fs::current_path(original);
+
+#ifdef _WIN32
+    _putenv_s("CODECTX_CONFIG_HOME", "");
+#else
+    unsetenv("CODECTX_CONFIG_HOME");
+#endif
+}
+
 int main()
 {
     return tests::run_all();

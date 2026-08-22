@@ -77,6 +77,41 @@ codectx -a /var/log/meu_app -o contexto_ia.txt
 
 ---
 
+## ⚙️ Configuração Persistente
+
+Salve suas preferências uma vez e rode `codectx` sem flags — no estilo do `git config`.
+
+```bash
+# Global (padrão): vale para qualquer diretório
+codectx config set ext cpp hpp
+codectx config add alvos /var/log/meu_app
+codectx config set output contexto_ia.txt
+codectx config list                 # lista a visão efetiva com origem [global]/[local]
+codectx config get ext              # imprime os valores da chave
+codectx config unset ext            # remove a chave
+codectx config path                 # mostra os caminhos global e local
+
+# Local: grava ./.codectx no projeto atual (commitável)
+codectx config --local set ext php js
+```
+
+**Precedência:** linha de comando > `.codectx` local > config global > defaults.
+Categorias não informadas na CLI são preenchidas pela config; `-a/--add` e
+`-n/--not` sempre somam com o que já existe. Chaves aceitas: `alvos`, `ext`,
+`file`, `add`, `not`, `output`, `no-rec`.
+
+Formato do arquivo (`chave=valor`, uma linha por valor):
+
+```ini
+# ~/.config/codectx/config
+alvos=src
+ext=cpp
+ext=hpp
+output=contexto_ia.txt
+```
+
+---
+
 ## ⚙️ Principais Funcionalidades
 
 * 🎯 **Filtros Avançados:** Selecione exatamente o que quer ver usando *Whitelists* de arquivos (`-f`) e extensões (`-e`).
@@ -90,9 +125,10 @@ codectx -a /var/log/meu_app -o contexto_ia.txt
 
 ```
 codectx/
-├── main.cpp            # entry point (parse + execução)
-├── codectx.hpp         # contrato público (Config, parse_args, ConcatenadorDeArquivos)
+├── main.cpp            # entry point (subcomando config + parse + execução)
+├── codectx.hpp         # contrato público (Config, parse_args, ConcatenadorDeArquivos, NivelConfig)
 ├── codectx.cpp         # implementação (filtros, varredura, exclusões)
+├── config.cpp          # configuração persistente (níveis global/local, subcomando config)
 ├── tests/
 │   ├── test_framework.hpp   # mini framework de testes (registro + CHECK)
 │   └── codectx_tests.cpp    # suíte table-driven (unitários + integração)

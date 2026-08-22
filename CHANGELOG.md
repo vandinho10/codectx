@@ -6,6 +6,31 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-22
+
+### Adicionado
+- **Configuração persistente** (estilo `git config`): subcomando `codectx config`
+  com verbos `list` (padrão), `get`, `set`, `add`, `unset` e `path`, escopos
+  `--global` (padrão) e `--local`.
+- Dois níveis de arquivo: global em
+  `$XDG_CONFIG_HOME/codectx/config` (`%APPDATA%\codectx\config.txt` no Windows)
+  e local `.codectx` descoberto subindo a hierarquia de diretórios a partir do
+  cwd (commitável por design).
+- Precedência: **CLI > local > global > defaults**. Categorias não fornecidas
+  na CLI são preenchidas pela config; `-a/--add` e `-n/--not` sempre somam.
+- Chaves suportadas: `alvos`, `ext`, `file`, `add`, `not`, `output`, `no-rec`.
+- Gravação atômica (tmp + rename), formato `chave=valor` (uma linha por valor,
+  comentários com `#`), avisos para linhas/chaves inválidas.
+- Variável `CODECTX_CONFIG_HOME` para redirecionar o nível global (sandbox/testes).
+- 12 novos testes (roundtrip, precedência, walk-up, ciclo set→get→unset,
+  `--local` etc.).
+
+### Alterado
+- `main.cpp`: intercepta `codectx config ...`; fluxo normal aplica os níveis de
+  configuração após `parse_args`.
+- `parse_args`: marca categorias tocadas na CLI (`cli_*`) sem mudar semântica
+  existente — todos os testes anteriores permanecem válidos.
+
 ## [1.2.0] - 2026-08-22
 
 ### Adicionado

@@ -14,8 +14,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
   `--global` (padrão) e `--local`.
 - Dois níveis de arquivo: global em
   `$XDG_CONFIG_HOME/codectx/config` (`%APPDATA%\codectx\config.txt` no Windows)
-  e local `.codectx` descoberto subindo a hierarquia de diretórios a partir do
-  cwd (commitável por design).
+  e local `.codectx.conf` descoberto subindo a hierarquia de diretórios a partir
+  do cwd (commitável por design; oculto também no Windows via atributo hidden).
 - Precedência: **CLI > local > global > defaults**. Categorias não fornecidas
   na CLI são preenchidas pela config; `-a/--add` e `-n/--not` sempre somam.
 - Chaves suportadas: `alvos`, `ext`, `file`, `add`, `not`, `output`, `no-rec`.

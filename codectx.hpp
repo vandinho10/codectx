@@ -88,8 +88,8 @@ bool valor_bool(const std::string &valor, bool padrao);
 // de config do usuário ($XDG_CONFIG_HOME|~/.config; %APPDATA% no Windows).
 fs::path caminho_config_global();
 
-// Local: primeiro arquivo `.codectx` a partir de `inicio` subindo até a raiz.
-// Retorna caminho vazio se não houver.
+// Local: primeiro arquivo `.codectx.conf` a partir de `inicio` subindo até a
+// raiz. Retorna caminho vazio se não houver.
 fs::path descobrir_config_local(const fs::path &inicio);
 
 NivelConfig carregar_nivel(const fs::path &arquivo);

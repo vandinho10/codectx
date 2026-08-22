@@ -91,11 +91,11 @@ codectx config get ext              # imprime os valores da chave
 codectx config unset ext            # remove a chave
 codectx config path                 # mostra os caminhos global e local
 
-# Local: grava ./.codectx no projeto atual (commitável)
+# Local: grava ./.codectx.conf no projeto atual (commitável)
 codectx config --local set ext php js
 ```
 
-**Precedência:** linha de comando > `.codectx` local > config global > defaults.
+**Precedência:** linha de comando > `.codectx.conf` local > config global > defaults.
 Categorias não informadas na CLI são preenchidas pela config; `-a/--add` e
 `-n/--not` sempre somam com o que já existe. Chaves aceitas: `alvos`, `ext`,
 `file`, `add`, `not`, `output`, `no-rec`.

@@ -6,6 +6,10 @@
 #include <iostream>
 #include <set>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 namespace codectx
 {
 
@@ -15,7 +19,7 @@ namespace
 const std::set<std::string> CHAVES_VALIDAS = {
     "alvos", "ext", "file", "add", "not", "output", "no-rec"};
 
-const char *NOME_ARQUIVO_LOCAL = ".codectx";
+const char *NOME_ARQUIVO_LOCAL = ".codectx.conf";
 
 std::string aparar(const std::string &s)
 {
@@ -226,6 +230,12 @@ bool salvar_nivel(const fs::path &arquivo, const NivelConfig &nivel)
         fs::remove(temporario, ec_rm);
         return false;
     }
+
+#ifdef _WIN32
+    // Espelha o comportamento de dotfiles do Linux: oculta o arquivo local.
+    if (arquivo.filename() == NOME_ARQUIVO_LOCAL)
+        SetFileAttributesW(arquivo.c_str(), FILE_ATTRIBUTE_HIDDEN);
+#endif
     return true;
 }
 
@@ -349,7 +359,7 @@ int usage_erro(const std::string &msg)
               << "Uso: codectx config [get <chave> | set <chave> <valores...> |\n"
               << "                     add <chave> <valores...> | unset <chave> |\n"
               << "                     list | path]\n"
-              << "Escopo de escrita: --global (padrao) | --local (grava ./.codectx)\n"
+              << "Escopo de escrita: --global (padrao) | --local (grava ./.codectx.conf)\n"
               << "Chaves: alvos ext file add not output no-rec\n";
     return EXIT_FAILURE;
 }

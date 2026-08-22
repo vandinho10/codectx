@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS;
     }
 
-    // Precedência: CLI > .codectx local > config global > defaults.
+    // Precedência: CLI > .codectx.conf local > config global > defaults.
     const codectx::NivelConfig global = codectx::carregar_nivel(codectx::caminho_config_global());
     const std::filesystem::path local_path =
         codectx::descobrir_config_local(std::filesystem::current_path());

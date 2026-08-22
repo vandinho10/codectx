@@ -497,15 +497,15 @@ TEST("caminho_config_global respeita CODECTX_CONFIG_HOME")
 #endif
 }
 
-TEST("descobrir_config_local sobe a hierarquia ate encontrar .codectx")
+TEST("descobrir_config_local sobe a hierarquia ate encontrar .codectx.conf")
 {
     TempDir raiz;
     fs::create_directories(raiz.dir / "a" / "b");
-    escrever(raiz.dir / ".codectx", "ext=php\n");
+    escrever(raiz.dir / ".codectx.conf", "ext=php\n");
 
     CHECK(descobrir_config_local(raiz.dir / "a" / "b").empty() == false);
-    CHECK(descobrir_config_local(raiz.dir / "a" / "b").filename() == ".codectx");
-    CHECK(descobrir_config_local(raiz.dir).filename() == ".codectx");
+    CHECK(descobrir_config_local(raiz.dir / "a" / "b").filename() == ".codectx.conf");
+    CHECK(descobrir_config_local(raiz.dir).filename() == ".codectx.conf");
 
     TempDir sem_config;
     CHECK(descobrir_config_local(sem_config.dir).empty());
@@ -693,7 +693,7 @@ TEST("comando_config: ciclo set -> get -> list -> unset em escopo global sandbox
 #endif
 }
 
-TEST("comando_config: --local grava ./.codectx no diretorio atual")
+TEST("comando_config: --local grava ./.codectx.conf no diretorio atual")
 {
 #ifdef _WIN32
     TempDir td;
@@ -707,16 +707,16 @@ TEST("comando_config: --local grava ./.codectx no diretorio atual")
     const fs::path original = fs::current_path();
     fs::current_path(td.dir); // cwd do teste
     CHECK(rodar_config({"config", "--local", "set", "output", "ctx.md"}) == EXIT_SUCCESS);
-    CHECK(fs::exists(td.dir / ".codectx"));
+    CHECK(fs::exists(td.dir / ".codectx.conf"));
 
-    const NivelConfig lido = carregar_nivel(td.dir / ".codectx");
+    const NivelConfig lido = carregar_nivel(td.dir / ".codectx.conf");
     const auto *v_out = lido.busca("output");
     CHECK(v_out != nullptr);
     if (v_out == nullptr)
         return;
     CHECK((*v_out)[0] == "ctx.md");
 
-    CHECK(descobrir_config_local(td.dir) == td.dir / ".codectx");
+    CHECK(descobrir_config_local(td.dir) == td.dir / ".codectx.conf");
     fs::current_path(original);
 
 #ifdef _WIN32

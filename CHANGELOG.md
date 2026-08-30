@@ -6,6 +6,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ## [Unreleased]
 
+### Alterado
+- `README.md`: referências de versão atualizadas (1.0.0 → 1.3.0) e nome do
+  arquivo padronizado em maiúsculas (`Readme.md` → `README.md`).
+
 ## [1.3.0] - 2026-08-22
 
 ### Adicionado

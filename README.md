@@ -11,7 +11,7 @@ O utilitário já vem pré-configurado com regras inteligentes para ignorar past
 O único pré-requisito é um compilador C++ (como `g++` ou `clang++`) que suporte o padrão **C++17**.
 
 ```bash
-make              # build de release (otimizado, v1.0.0)
+make              # build de release (otimizado, v1.3.0)
 ```
 
 Você também pode compilar manualmente:
@@ -41,9 +41,9 @@ RESUMO: 106 ok, 0 falhas
 Para validar manualmente o comportamento do binário:
 
 ```bash
-./codectx --version           # codectx v1.0.0
+./codectx --version           # codectx v1.3.0
 ./codectx --help              # ajuda
-make version                  # codectx v1.0.0 (via Makefile)
+make version                  # codectx v1.3.0 (via Makefile)
 ```
 
 ---

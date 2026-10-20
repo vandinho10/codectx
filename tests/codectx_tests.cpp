@@ -824,6 +824,34 @@ TEST("regressao: newline final mesmo quando conteudo nao termina com \\n")
     CHECK(s.find("sem-nl\n========================================") != std::string::npos);
 }
 
+// ============ updater: semver e artefato ============
+
+TEST("update: parse_semver aceita v-prefixo e ignora pre-release")
+{
+    int a = 0, b = 0, c = 0;
+    CHECK(update_parse_semver_publico("1.2.3", a, b, c) == true);
+    CHECK(a == 1 && b == 2 && c == 3);
+    CHECK(update_parse_semver_publico("v1.3.2", a, b, c) == true);
+    CHECK(a == 1 && b == 3 && c == 2);
+    CHECK(update_parse_semver_publico("v2.0.0-rc.1", a, b, c) == true);
+    CHECK(a == 2 && b == 0 && c == 0);
+    CHECK(update_parse_semver_publico("abc", a, b, c) == false);
+}
+
+TEST("update: cmp_semver ordena major/minor/patch")
+{
+    CHECK(update_cmp_semver_publico(1, 3, 1, 1, 3, 2) < 0);
+    CHECK(update_cmp_semver_publico(1, 4, 0, 1, 3, 2) > 0);
+    CHECK(update_cmp_semver_publico(1, 3, 2, 1, 3, 2) == 0);
+}
+
+TEST("update: nome_artefato nao vazio nesta plataforma")
+{
+    const std::string nome = update_nome_artefato_publico();
+    CHECK(nome.empty() == false);
+    CHECK(nome.find("codectx-") == 0);
+}
+
 int main()
 {
     return tests::run_all();

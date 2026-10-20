@@ -57,6 +57,22 @@ codectx --help
 
 ---
 
+## 🔄 Atualização
+
+Requer [`curl`](https://curl.se/) no `PATH`. Consulta
+[GitHub Releases](https://github.com/vandinho10/codectx/releases/latest) e
+substitui o binário em execução (verifica `SHA256SUMS` quando disponível).
+
+```bash
+codectx update check     # só informa se há versão mais nova
+codectx update           # baixa e instala (pede confirmação)
+codectx update --yes     # instala sem prompt (scripts/CI)
+```
+
+Override do repositório: `CODECTX_UPDATE_REPO=owner/repo`.
+
+---
+
 ## 🚀 Como Usar
 
 ```bash

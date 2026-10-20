@@ -235,7 +235,11 @@ void exibir_ajuda(const char *prog_name)
               << "  --                    Fim das opcoes; restantes sao alvos literais\n\n"
               << "Configuracao persistente (estilo git config):\n"
               << "  " << prog_name << " config [list|get|set|add|unset|path] [--global|--local]\n"
-              << "  Precedencia: CLI > .codectx.conf local > config global > defaults\n";
+              << "  Precedencia: CLI > .codectx.conf local > config global > defaults\n\n"
+              << "Atualizacao (GitHub Releases, requer curl):\n"
+              << "  " << prog_name << " update check   # consulta versao remota\n"
+              << "  " << prog_name << " update         # baixa e instala (confirma)\n"
+              << "  " << prog_name << " update --yes   # instala sem prompt\n";
 }
 
 ConcatenadorDeArquivos::ConcatenadorDeArquivos(const Config &cfg)

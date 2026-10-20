@@ -118,4 +118,13 @@ void aplicar_config(Config &cfg, const NivelConfig &efetivo);
 // de saída. Escrita via --global (padrão) ou --local.
 int comando_config(int argc, char *argv[]);
 
+// Subcomando `codectx update [check] [--yes]` — consulta GitHub Releases e
+// opcionalmente substitui o binário local. Requer `curl` no PATH.
+int comando_update(int argc, char *argv[]);
+
+// Helpers expostos para testes unitários do updater.
+bool update_parse_semver_publico(const std::string &s, int &maj, int &min, int &pat);
+int update_cmp_semver_publico(int a0, int a1, int a2, int b0, int b1, int b2);
+std::string update_nome_artefato_publico();
+
 } // namespace codectx

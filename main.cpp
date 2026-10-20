@@ -16,9 +16,11 @@ int main(int argc, char *argv[])
 #endif
     std::ios::sync_with_stdio(false);
 
-    // Subcomando de configuração persistente (estilo git config).
+    // Subcomandos (estilo git): config, update.
     if (argc > 1 && std::string(argv[1]) == "config")
         return codectx::comando_config(argc, argv);
+    if (argc > 1 && std::string(argv[1]) == "update")
+        return codectx::comando_update(argc, argv);
 
     codectx::Config cfg;
     if (!codectx::parse_args(argc, argv, cfg))

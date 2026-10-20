@@ -11,6 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           # Linux: containers debian:bookworm-slim por arquitetura
@@ -80,6 +81,12 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Generate SHA256SUMS
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Create release
         uses: softprops/action-gh-release@v3

@@ -4,6 +4,19 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`) com [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
+## [1.4.0] - 2026-10-20
+
+### Adicionado
+- **`codectx update`**: consulta a última release no GitHub e atualiza o binário
+  local (`update check`, `update`, `update --yes`).
+- Requer `curl` no PATH; detecta artefato por OS/arch
+  (`codectx-linux-x86_64|aarch64|arm32`, `codectx-windows-amd64|x86.exe`).
+- Verifica `SHA256SUMS` quando o asset existe na release.
+- CI: gera e anexa `SHA256SUMS` na release; `fail-fast: false` na matrix.
+
+### Interno
+- Novo módulo `update.cpp`; helpers de SemVer testáveis na suíte.
+
 ## [1.3.2] - 2026-10-20
 
 ### Corrigido

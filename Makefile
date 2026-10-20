@@ -4,7 +4,7 @@ WARN     := -Wall -Wextra -Wpedantic
 OPTFLAGS := -O2
 DBGFLAGS := -O0 -g
 
-VERSION  := 1.3.2
+VERSION  := 1.4.0
 TARGET   := codectx
 TESTBIN  := tests/test_runner
 TESTBIN_SAN := tests/test_runner_san
@@ -18,7 +18,7 @@ endif
 
 CXXFLAGS := $(STD) $(WARN)
 
-SRCS := main.cpp codectx.cpp config.cpp
+SRCS := main.cpp codectx.cpp config.cpp update.cpp
 
 .PHONY: all check test sanitize version install clean
 
@@ -32,15 +32,15 @@ check:
 	$(CXX) $(CXXFLAGS) -Werror -fsyntax-only $(SRCS)
 	@echo "verificacao ok (zero warnings)"
 
-$(TESTBIN): tests/codectx_tests.cpp codectx.cpp config.cpp codectx.hpp tests/test_framework.hpp
-	$(CXX) $(CXXFLAGS) $(DBGFLAGS) -DCODECTX_VERSION=\"$(VERSION)\" -o $@ tests/codectx_tests.cpp codectx.cpp config.cpp
+$(TESTBIN): tests/codectx_tests.cpp codectx.cpp config.cpp update.cpp codectx.hpp tests/test_framework.hpp
+	$(CXX) $(CXXFLAGS) $(DBGFLAGS) -DCODECTX_VERSION=\"$(VERSION)\" -o $@ tests/codectx_tests.cpp codectx.cpp config.cpp update.cpp
 
 test: $(TESTBIN)
 	./$(TESTBIN)
 
 # Build com sanitizers (AddressSanitizer + UndefinedBehaviorSanitizer)
-$(TESTBIN_SAN): tests/codectx_tests.cpp codectx.cpp config.cpp codectx.hpp tests/test_framework.hpp
-	$(CXX) $(CXXFLAGS) $(DBGFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer -DCODECTX_VERSION=\"$(VERSION)\" -o $@ tests/codectx_tests.cpp codectx.cpp config.cpp
+$(TESTBIN_SAN): tests/codectx_tests.cpp codectx.cpp config.cpp update.cpp codectx.hpp tests/test_framework.hpp
+	$(CXX) $(CXXFLAGS) $(DBGFLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer -DCODECTX_VERSION=\"$(VERSION)\" -o $@ tests/codectx_tests.cpp codectx.cpp config.cpp update.cpp
 
 sanitize: $(TESTBIN_SAN)
 	./$(TESTBIN_SAN)

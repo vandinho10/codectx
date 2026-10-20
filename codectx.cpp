@@ -315,8 +315,14 @@ std::string ConcatenadorDeArquivos::caminho_exibicao(const fs::path &arquivo) co
     if (ec)
         return arquivo.string();
     const fs::path rel = fs::relative(abs, fs::current_path(), ec);
-    if (!ec && !rel.empty() && rel.native().find("..") == std::string::npos)
-        return rel.lexically_normal().string();
+    // generic_string() é portátil (char em todos os alvos); native() no
+    // Windows é wstring e quebra .find("..") no cross-compile mingw.
+    if (!ec && !rel.empty())
+    {
+        const std::string rel_s = rel.generic_string();
+        if (rel_s.find("..") == std::string::npos)
+            return rel.lexically_normal().string();
+    }
     return abs.lexically_normal().string();
 }
 

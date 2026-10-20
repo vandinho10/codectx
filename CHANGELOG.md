@@ -4,6 +4,36 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`) com [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
+## [1.3.2] - 2026-10-20
+
+### Corrigido
+- Alvos explícitos (arquivo na CLI ou via `-a`) ignoram filtros `-e`/`-f` e
+  só passam por checagem de binário/segredo.
+- Diretório citado explicitamente (ex.: `codectx build`) não é mais silenciado
+  pela blacklist de nomes.
+- Detecção de binário por byte nulo nos primeiros 8 KiB (além da blacklist de
+  extensão), evitando dump de executáveis sem extensão.
+- Segredos bloqueados por padrão: `.env*`, `*.pem`/`*.key`, `id_rsa*`,
+  `.npmrc`, `.pypirc`, `credentials.json`, etc.
+- Newline final do conteúdo garantida mesmo em `stdout` (antes `tellp()`
+  retornava -1 e colava o delimitador de FIM na última linha).
+- Iteração de diretório usa `error_code` e continua após falhas pontuais
+  (symlink quebrado / permissão), em vez de abortar o alvo inteiro.
+- Deduplicação por caminho canônico (`codectx . -a src/x.cpp` não imprime 2x).
+- Saída ordenada por caminho (reproduzível).
+- Caminhos relativos ao cwd na saída (em vez de absolutos).
+- `-o` grava via temp+rename (atômico) e ignora o próprio arquivo de saída
+  por equivalência de caminho.
+- Suporte a `--` para alvos que começam com `-`.
+- Aviso quando `-o` vem sem argumento.
+- Teste de binário: literal `"\x00..."` era truncado; usa `std::string(..., 3)`.
+
+### Alterado
+- Ajuda menciona `config`, precedência e `--`.
+- `std::ios::sync_with_stdio(false)` no `main` para saída mais rápida.
+- Blacklist ampliada: caches (`.pytest_cache`, `.mypy_cache`, …), lockfiles
+  (`Cargo.lock`, `go.sum`, …).
+
 ## [1.3.1] - 2026-09-02
 
 ### Alterado

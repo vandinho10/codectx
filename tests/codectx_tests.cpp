@@ -213,7 +213,7 @@ TEST("processar_arquivo: default exclui binarios (.bin) e inclui texto")
 {
     TempDir td;
     escrever(td.dir / "a.txt", "ola");
-    escrever(td.dir / "c.bin", "\x00\x01\x02");
+    escrever(td.dir / "c.bin", std::string("\x00\x01\x02", 3));
 
     ConcatenadorDeArquivos app(parse({"-t", td.dir.string()}));
     std::ostringstream out;
@@ -724,6 +724,104 @@ TEST("comando_config: --local grava ./.codectx.conf no diretorio atual")
 #else
     unsetenv("CODECTX_CONFIG_HOME");
 #endif
+}
+
+// ============ regressoes v1.3.2 ============
+
+TEST("regressao: alvo arquivo explicito ignora filtro -e")
+{
+    TempDir td;
+    escrever(td.dir / "Makefile", "all:");
+    escrever(td.dir / "a.cpp", "int x;");
+
+    // -e cpp + arquivo Makefile como alvo: Makefile deve sair (forcar)
+    Config cfg = parse({"-e", "cpp", (td.dir / "Makefile").string()});
+    ConcatenadorDeArquivos app(cfg);
+    std::ostringstream out;
+    app.percorrer_alvos(out);
+    CHECK(contar_marcas(out.str()) == 1);
+    CHECK(out.str().find("Makefile") != std::string::npos);
+}
+
+TEST("regressao: -a com arquivo passa pelo filtro -e")
+{
+    TempDir td;
+    escrever(td.dir / "a.cpp", "int x;");
+    escrever(td.dir / "Makefile", "all:");
+
+    Config cfg = parse({"-e", "cpp", "-t", td.dir.string(),
+                        "-a", (td.dir / "Makefile").string()});
+    ConcatenadorDeArquivos app(cfg);
+    std::ostringstream out;
+    app.percorrer_alvos(out);
+    // a.cpp (filtro) + Makefile (forcar via -a)
+    CHECK(contar_marcas(out.str()) == 2);
+    CHECK(out.str().find("Makefile") != std::string::npos);
+}
+
+TEST("regressao: diretorio build citado explicitamente nao e silenciado")
+{
+    TempDir td;
+    fs::create_directories(td.dir / "build");
+    escrever(td.dir / "build" / "x.txt", "conteudo-build");
+
+    ConcatenadorDeArquivos app(parse({"-t", (td.dir / "build").string()}));
+    std::ostringstream out;
+    app.percorrer_alvos(out);
+    CHECK(contar_marcas(out.str()) == 1);
+    CHECK(out.str().find("conteudo-build") != std::string::npos);
+}
+
+TEST("regressao: arquivo sem extensao com byte nulo e tratado como binario")
+{
+    TempDir td;
+    const fs::path bin = td.dir / "executavel";
+    {
+        std::ofstream f(bin, std::ios::binary);
+        f.write("\x7f""ELF\x00\x01", 6);
+    }
+
+    ConcatenadorDeArquivos app(parse({"-t", td.dir.string()}));
+    std::ostringstream out;
+    CHECK(app.processar_arquivo(bin, out) == false);
+}
+
+TEST("regressao: .env e bloqueado como segredo")
+{
+    TempDir td;
+    escrever(td.dir / ".env", "SECRET=1");
+    escrever(td.dir / "ok.txt", "ok");
+
+    ConcatenadorDeArquivos app(parse({"-t", td.dir.string()}));
+    std::ostringstream out;
+    app.percorrer_alvos(out);
+    CHECK(out.str().find("SECRET") == std::string::npos);
+    CHECK(out.str().find("ok") != std::string::npos);
+}
+
+TEST("regressao: duplicata via -a nao imprime duas vezes")
+{
+    TempDir td;
+    escrever(td.dir / "a.txt", "uma-vez");
+
+    Config cfg = parse({"-t", td.dir.string(), "-a", (td.dir / "a.txt").string()});
+    ConcatenadorDeArquivos app(cfg);
+    std::ostringstream out;
+    app.percorrer_alvos(out);
+    CHECK(contar_marcas(out.str()) == 1);
+}
+
+TEST("regressao: newline final mesmo quando conteudo nao termina com \\n")
+{
+    TempDir td;
+    escrever(td.dir / "a.txt", "sem-nl");
+
+    ConcatenadorDeArquivos app(parse({"-t", td.dir.string()}));
+    std::ostringstream out;
+    CHECK(app.processar_arquivo(td.dir / "a.txt", out) == true);
+    const std::string s = out.str();
+    // delimitor de FIM nao cola no conteudo
+    CHECK(s.find("sem-nl\n========================================") != std::string::npos);
 }
 
 int main()

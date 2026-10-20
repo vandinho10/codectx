@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
+    std::ios::sync_with_stdio(false);
 
     // Subcomando de configuração persistente (estilo git config).
     if (argc > 1 && std::string(argv[1]) == "config")

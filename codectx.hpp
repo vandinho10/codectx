@@ -4,6 +4,7 @@
 #include <ostream>
 #include <regex>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -51,7 +52,9 @@ public:
 
     bool deve_ignorar(const fs::path &path) const;
 
-    bool processar_arquivo(const fs::path &arquivo, std::ostream &out);
+    // forcar=true: alvo explícito (arquivo citado na CLI / -a) — ignora
+    // filtros de extensão/nome, mantém checagem de binário e segredos.
+    bool processar_arquivo(const fs::path &arquivo, std::ostream &out, bool forcar = false);
 
     void percorrer_alvos(std::ostream &out);
 
@@ -62,6 +65,14 @@ private:
     std::regex regex_extensoes_;
     std::regex padroes_ignorar_;
     bool tem_extensoes_ = false;
+    std::unordered_set<std::string> processados_;
+    fs::path saida_abs_;
+
+    static bool parece_binario(const fs::path &p);
+    static bool parece_segredo(const fs::path &p);
+    std::string caminho_exibicao(const fs::path &arquivo) const;
+    bool ja_processado_ou_saida(const fs::path &arquivo);
+    void marcar_processado(const fs::path &arquivo);
 };
 
 // ------------------------- configuração persistente ------------------------

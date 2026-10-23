@@ -4,6 +4,29 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`) com [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
+## [1.4.1] - 2026-10-23
+
+### Corrigido
+- **`codectx update`** não encontrava nenhum asset na release: o parse do JSON
+  procurava `browser_download_url` no máximo 800 caracteres após `"name"`, mas
+  o objeto `uploader` deixa essa distância em ~1400. Agora o nome vem do
+  basename de `browser_download_url`. Quem está na v1.4.0 precisa atualizar
+  uma vez pelos scripts em `scripts/` (ou baixando o binário manualmente).
+- **Windows**: comandos `curl`/`certutil` usavam aspas simples, que o
+  `cmd.exe` não reconhece (User-Agent com espaços e caminho de `-o`
+  quebravam). Aspas agora seguem o shell da plataforma.
+- `upgrade-to-1.4.sh`: em `curl … | bash` a confirmação lia o próprio script
+  e cancelava sozinha; agora lê de `/dev/tty` (ou pede `CODECTX_YES=1`).
+- `upgrade-to-1.4.ps1`: não fecha mais a janela do PowerShell sob
+  `irm | iex`; verificação de SHA256 funcionava só no PowerShell 7 (no 5.1 o
+  conteúdo vinha como bytes e a checagem era pulada); força TLS 1.2; prompt
+  mostrava caminho vazio (`$bin?` era lido como variável) e prosseguia sem
+  confirmação quando não havia entrada.
+
+### Alterado
+- `codectx update check` retorna **2** quando há versão nova (0 = atualizado,
+  1 = erro), para uso em scripts.
+
 ## [1.4.0] - 2026-10-20
 
 ### Adicionado

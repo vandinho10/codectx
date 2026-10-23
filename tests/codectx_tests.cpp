@@ -852,6 +852,30 @@ TEST("update: nome_artefato nao vazio nesta plataforma")
     CHECK(nome.find("codectx-") == 0);
 }
 
+TEST("update: json_assets acha assets com objeto uploader longo entre name e url")
+{
+    // Trecho no formato real da API: "uploader" (~1 KB) separa "name" de
+    // "browser_download_url".
+    std::string uploader = "\"uploader\":{\"login\":\"github-actions[bot]\",\"x\":\"";
+    uploader += std::string(1200, 'x');
+    uploader += "\"}";
+    const std::string base = "https://github.com/o/r/releases/download/v1.4.0/";
+    const std::string json =
+        "{\"tag_name\":\"v1.4.0\",\"name\":\"v1.4.0\",\"assets\":["
+        "{\"name\":\"codectx-linux-x86_64\",\"label\":\"\"," + uploader +
+        ",\"browser_download_url\":\"" + base + "codectx-linux-x86_64\"},"
+        "{\"name\":\"SHA256SUMS\",\"label\":\"\"," + uploader +
+        ",\"browser_download_url\":\"" + base + "SHA256SUMS\"}]}";
+    const auto assets = update_json_assets_publico(json);
+    CHECK(assets.size() == 2);
+    if (assets.size() == 2)
+    {
+        CHECK(assets[0].first == "codectx-linux-x86_64");
+        CHECK(assets[0].second == base + "codectx-linux-x86_64");
+        CHECK(assets[1].first == "SHA256SUMS");
+    }
+}
+
 int main()
 {
     return tests::run_all();

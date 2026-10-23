@@ -68,8 +68,7 @@ encontrar_binario() {
   done
 
   die "codectx nao encontrado no PATH nem em locais comuns.
-  Informe o caminho: $0 /caminho/para/codectx
-  ou: CODECTX_BIN=/caminho/para/codectx $0"
+  Informe o caminho: CODECTX_BIN=/caminho/para/codectx (ou como argumento do script)"
 }
 
 # ---------- plataforma ----------
@@ -176,8 +175,10 @@ main() {
   fi
 
   if [[ "$YES" != "1" ]]; then
+    # Em `curl | bash` o stdin é o próprio script: lê a resposta do terminal.
+    { : </dev/tty; } 2>/dev/null || die "sem terminal para confirmar. Rode com CODECTX_YES=1"
     printf 'Atualizar %s → %s em %s? [s/N] ' "$LOCAL_VER" "$TAG_NAME" "$BIN"
-    read -r resp || true
+    read -r resp </dev/tty || true
     case "${resp:-}" in
       s|S|y|Y|sim|SIM|yes|YES) ;;
       *) echo "Cancelado."; exit 0 ;;

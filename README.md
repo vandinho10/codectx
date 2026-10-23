@@ -11,7 +11,7 @@ O utilitário já vem pré-configurado com regras inteligentes para ignorar past
 O único pré-requisito é um compilador C++ (como `g++` ou `clang++`) que suporte o padrão **C++17**.
 
 ```bash
-make              # build de release (otimizado, v1.4.0)
+make              # build de release (otimizado, v1.4.1)
 ```
 
 Você também pode compilar manualmente:
@@ -54,7 +54,44 @@ make version                  # codectx v1.4.0 (via Makefile)
 
 ---
 
-## 📥 Download (binários pré-compilados)
+## ⚡ Instalação rápida (recomendada)
+
+Os scripts abaixo baixam o binário certo da última release, conferem o
+`SHA256SUMS` e instalam numa pasta do próprio usuário, **sem sudo/admin**.
+Assim o `codectx update` sempre tem permissão para se substituir.
+
+```bash
+# Linux → ~/.local/bin/codectx
+curl -fsSL https://raw.githubusercontent.com/vandinho10/codectx/main/scripts/install.sh | bash
+```
+
+```powershell
+# Windows (PowerShell) → %LOCALAPPDATA%\codectx\codectx.exe
+irm https://raw.githubusercontent.com/vandinho10/codectx/main/scripts/install.ps1 | iex
+```
+
+Se a pasta não estiver no `PATH`, o script a adiciona (Linux: `~/.bashrc`,
+`~/.zshrc` ou `~/.profile`; Windows: `PATH` do usuário). Abra um novo
+terminal depois da primeira instalação.
+
+Se o `codectx` já estiver instalado, o mesmo comando **atualiza no caminho
+atual** (com backup `.old`), inclusive versões antigas que não têm
+`codectx update`.
+
+| Variável (Linux) / parâmetro (Windows) | Efeito |
+|---|---|
+| `CODECTX_INSTALL_DIR` / `-InstallDir` | pasta da instalação nova |
+| `CODECTX_BIN` / `-BinPath` | caminho exato do binário (instala/atualiza nele) |
+| `CODECTX_TAG` | versão fixa (ex.: `v1.4.1`); padrão = última release |
+| `CODECTX_YES=1` / `-Yes` | não pede confirmação ao atualizar |
+| `CODECTX_NO_MODIFY_PATH=1` / `-NoModifyPath` | não altera o `PATH` |
+
+Para passar parâmetros no Windows, baixe o script e rode localmente
+(`.\install.ps1 -InstallDir 'D:\bin'`) ou use as variáveis de ambiente.
+
+---
+
+## 📥 Download manual (binários pré-compilados)
 
 Cada tag `v*` dispara o workflow [`release.yml`](.github/workflows/release.yml),
 que compila e publica os binários em
@@ -75,49 +112,46 @@ Exemplo (Linux x86_64):
 curl -fLO https://github.com/vandinho10/codectx/releases/latest/download/codectx-linux-x86_64
 curl -fLO https://github.com/vandinho10/codectx/releases/latest/download/SHA256SUMS
 sha256sum --check --ignore-missing SHA256SUMS
-install -m 0755 codectx-linux-x86_64 ~/.local/bin/codectx
+install -Dm 0755 codectx-linux-x86_64 ~/.local/bin/codectx
 ```
 
 ---
 
-## 📦 Instalação a partir do código-fonte (Uso Global)
+## 📦 Instalação a partir do código-fonte
 
 ```bash
-sudo make install             # instala em /usr/local/bin/codectx
-codectx --help
+make install                        # instala em ~/.local/bin/codectx (sem sudo)
+sudo make install PREFIX=/usr/local # instala para todos os usuários
+make uninstall                      # remove (use o mesmo PREFIX da instalação)
 ```
+
+> Instalado em pasta do sistema (ex.: `/usr/local/bin`), o `codectx update`
+> também vai precisar de `sudo`.
 
 ---
 
 ## 🔄 Atualização
 
-Requer [`curl`](https://curl.se/) no `PATH`. Consulta
-[GitHub Releases](https://github.com/vandinho10/codectx/releases/latest) e
-substitui o binário em execução (verifica `SHA256SUMS` quando disponível).
+Requer [`curl`](https://curl.se/) no `PATH` (já incluso no Windows 10+).
+Consulta [GitHub Releases](https://github.com/vandinho10/codectx/releases/latest)
+e substitui o binário em execução (verifica `SHA256SUMS` quando disponível).
 
 ```bash
-codectx update check     # só informa se há versão mais nova
+codectx update check     # só informa: sai com 0 = atualizado, 2 = há versão nova, 1 = erro
 codectx update           # baixa e instala (pede confirmação)
 codectx update --yes     # instala sem prompt (scripts/CI)
 ```
 
 Override do repositório: `CODECTX_UPDATE_REPO=owner/repo`.
 
-### Atualizando a partir da v1.3.x
+### Atualizando a partir da v1.3.x ou v1.4.0
 
-Versões anteriores à 1.4 não possuem `codectx update`. Use os scripts de
-upgrade, que localizam o binário instalado, baixam o artefato correto e o
-substituem no mesmo caminho (com backup `.old`):
-
-```bash
-# Linux
-curl -fsSL https://raw.githubusercontent.com/vandinho10/codectx/main/scripts/upgrade-to-1.4.sh | bash
-```
-
-```powershell
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/vandinho10/codectx/main/scripts/upgrade-to-1.4.ps1 | iex
-```
+A v1.3.x não tem `codectx update` e o da v1.4.0 não encontra o binário na
+release (corrigido na v1.4.1). Nesses casos, rode uma vez o comando da
+[instalação rápida](#-instalação-rápida-recomendada): ele detecta a instalação
+atual e atualiza no mesmo caminho. As URLs antigas
+(`scripts/upgrade-to-1.4.sh` / `.ps1`) continuam funcionando e repassam para
+os novos scripts.
 
 ---
 
@@ -194,7 +228,7 @@ codectx/
 ├── codectx.cpp         # implementação (filtros, varredura, exclusões)
 ├── config.cpp          # configuração persistente (níveis global/local, subcomando config)
 ├── update.cpp          # subcomando update (GitHub Releases, SHA256SUMS, SemVer)
-├── scripts/            # upgrade-to-1.4.sh / .ps1 (atualizador externo)
+├── scripts/            # install.sh / install.ps1 (instalador e atualizador externo)
 ├── docs/               # documentação técnica
 ├── tests/
 │   ├── test_framework.hpp   # mini framework de testes (registro + CHECK)

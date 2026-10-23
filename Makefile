@@ -9,6 +9,11 @@ TARGET   := codectx
 TESTBIN  := tests/test_runner
 TESTBIN_SAN := tests/test_runner_san
 
+# Instalação no diretório do usuário por padrão (sem sudo), para que
+# `codectx update` consiga substituir o binário. Ex.: make install PREFIX=/usr/local
+PREFIX   ?= $(HOME)/.local
+BINDIR   ?= $(PREFIX)/bin
+
 # Alvo do sistema: nativo por padrao; TARGET_OS=Windows_NT com mingw-w64
 # (x86_64-w64-mingw32-g++ / i686-w64-mingw32-g++) gera binario 100% estatico.
 TARGET_OS ?= $(shell uname -s)
@@ -20,7 +25,7 @@ CXXFLAGS := $(STD) $(WARN)
 
 SRCS := main.cpp codectx.cpp config.cpp update.cpp
 
-.PHONY: all check test sanitize version install clean
+.PHONY: all check test sanitize version install uninstall clean
 
 all: $(TARGET)
 
@@ -49,7 +54,12 @@ version:
 	@echo "$(TARGET) v$(VERSION)"
 
 install: $(TARGET)
-	install -m 0755 $(TARGET) /usr/local/bin/$(TARGET)
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 0755 $(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET)
+	@case ":$$PATH:" in *":$(BINDIR):"*) ;; *) echo "aviso: $(BINDIR) nao esta no PATH";; esac
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/$(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET).old
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(TESTBIN) $(TESTBIN_SAN)

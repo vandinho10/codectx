@@ -2,7 +2,20 @@
 
 > Planejamento da **atividade em execução**. Atualizado a cada novo planejamento.
 
-## Atividade em execução: Instalador em local padrão
+## Atividade em execução: Documentação da v1.4.1
+
+### Objetivo
+Alinhar README, `docs/README.md`, TODO e PLANNER ao que entrou na v1.4.1
+(correções do `codectx update`, instalador em local do usuário,
+`make install` com `PREFIX`, `make uninstall`).
+
+### Status
+- [x] README (funcionalidades, contagem de testes, estrutura).
+- [x] `docs/README.md` reescrito (CLI completa, subcomandos, códigos de saída,
+  caminhos de config e instalação, release).
+- [x] TODO e PLANNER atualizados.
+
+## Atividade anterior: Instalador em local padrão — ✅ concluída
 
 ### Objetivo
 Instalar o binário numa pasta do usuário (Linux `~/.local/bin`, Windows
@@ -19,7 +32,7 @@ sem sudo/admin.
 ### Status
 - [x] Scripts de instalação (testados em Linux; `.ps1` testado com pwsh no Linux).
 - [x] Makefile (`PREFIX`, `uninstall`), README e CHANGELOG.
-- [ ] Validar `install.ps1` num Windows real (PATH do usuário).
+- [x] Validar `install.ps1` num Windows real (PATH do usuário) — v1.4.1 validada em Linux e Windows.
 
 ## Atividade anterior: Documentação da v1.4 e publicação de binários — ✅ concluída
 

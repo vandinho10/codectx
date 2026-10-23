@@ -26,6 +26,9 @@ namespace
 const char *REPO_DEFAULT = "vandinho10/codectx";
 const char *API_HOST = "https://api.github.com";
 
+// Código de saída de `update check` quando há versão nova (0 = atualizado, 1 = erro).
+constexpr int EXIT_UPDATE_DISPONIVEL = 2;
+
 std::string repo_slug()
 {
     if (const char *e = std::getenv("CODECTX_UPDATE_REPO"))
@@ -54,6 +57,29 @@ bool tem_comando(const char *nome)
     std::string cmd = std::string("command -v ") + nome + " >/dev/null 2>&1";
 #endif
     return std::system(cmd.c_str()) == 0;
+}
+
+// Envolve argumento em aspas para o shell da plataforma: cmd.exe só entende
+// aspas duplas; no sh usa aspas simples (escapando ' interno).
+std::string aspas(const std::string &s)
+{
+#ifdef _WIN32
+    std::string out = "\"";
+    for (char c : s)
+        if (c != '"')
+            out += c;
+    return out + "\"";
+#else
+    std::string out = "'";
+    for (char c : s)
+    {
+        if (c == '\'')
+            out += "'\\''";
+        else
+            out += c;
+    }
+    return out + "'";
+#endif
 }
 
 // Executa comando e captura stdout. Retorna false se o processo falhar.
@@ -245,12 +271,10 @@ std::string curl_user_agent()
 std::string http_get(const std::string &url)
 {
     // -f falha em HTTP>=400; -s silencioso; -S mostra erro; -L segue redirect
-    const std::string cmd =
-        "curl -fsSL -A '" + curl_user_agent() + "' "
-        "-H 'Accept: application/vnd.github+json' "
-        "-H 'X-GitHub-Api-Version: 2022-11-28' "
-        "'" +
-        url + "'";
+    const std::string cmd = "curl -fsSL -A " + aspas(curl_user_agent()) +
+                            " -H " + aspas("Accept: application/vnd.github+json") +
+                            " -H " + aspas("X-GitHub-Api-Version: 2022-11-28") + " " +
+                            aspas(url);
     std::string body;
     if (!capturar_cmd(cmd, body))
     {
@@ -262,9 +286,8 @@ std::string http_get(const std::string &url)
 
 bool http_download(const std::string &url, const fs::path &dest)
 {
-    const std::string cmd =
-        "curl -fsSL -A '" + curl_user_agent() + "' -o '" + dest.string() + "' '" +
-        url + "'";
+    const std::string cmd = "curl -fsSL -A " + aspas(curl_user_agent()) + " -o " +
+                            aspas(dest.string()) + " " + aspas(url);
     const int rc = std::system(cmd.c_str());
     return rc == 0 && fs::exists(dest);
 }
@@ -307,46 +330,34 @@ struct AssetInfo
     std::string url;
 };
 
-// Percorre blocos "name":"...","...","browser_download_url":"..."
+// Percorre cada "browser_download_url" e usa o basename da URL como nome do
+// asset. Não depende da distância até "name" (o objeto "uploader" fica entre
+// os dois e tem tamanho variável).
 std::vector<AssetInfo> json_assets(const std::string &json)
 {
     std::vector<AssetInfo> out;
+    const std::string key = "\"browser_download_url\"";
     size_t pos = 0;
     while (true)
     {
-        const size_t npos = json.find("\"name\"", pos);
-        if (npos == std::string::npos)
+        const size_t k = json.find(key, pos);
+        if (k == std::string::npos)
             break;
-        const size_t colon = json.find(':', npos + 6);
+        const size_t colon = json.find(':', k + key.size());
         if (colon == std::string::npos)
             break;
-        const size_t q1 = json.find('"', colon + 1);
-        if (q1 == std::string::npos)
+        const size_t u1 = json.find('"', colon + 1);
+        if (u1 == std::string::npos)
             break;
-        const size_t q2 = json.find('"', q1 + 1);
-        if (q2 == std::string::npos)
-            break;
-        const std::string name = json.substr(q1 + 1, q2 - q1 - 1);
-
-        // browser_download_url próximo (dentro de alguns KB)
-        const size_t url_key = json.find("\"browser_download_url\"", q2);
-        if (url_key == std::string::npos || url_key > q2 + 800)
-        {
-            pos = q2 + 1;
-            continue;
-        }
-        const size_t uc = json.find(':', url_key + 22);
-        const size_t u1 = json.find('"', uc + 1);
         const size_t u2 = json.find('"', u1 + 1);
-        if (u1 == std::string::npos || u2 == std::string::npos)
-        {
-            pos = q2 + 1;
-            continue;
-        }
+        if (u2 == std::string::npos)
+            break;
         AssetInfo a;
-        a.name = name;
         a.url = json.substr(u1 + 1, u2 - u1 - 1);
-        out.push_back(std::move(a));
+        const size_t barra = a.url.find_last_of('/');
+        a.name = barra == std::string::npos ? a.url : a.url.substr(barra + 1);
+        if (!a.name.empty())
+            out.push_back(std::move(a));
         pos = u2 + 1;
     }
     return out;
@@ -359,7 +370,7 @@ std::string sha256_arquivo(const fs::path &p)
     std::string out;
 #if defined(_WIN32)
     // certutil -hashfile file SHA256
-    if (capturar_cmd("certutil -hashfile \"" + p.string() + "\" SHA256", out))
+    if (capturar_cmd("certutil -hashfile " + aspas(p.string()) + " SHA256", out))
     {
         // segunda linha costuma ser o hash
         std::istringstream iss(out);
@@ -376,7 +387,7 @@ std::string sha256_arquivo(const fs::path &p)
             return hex;
     }
 #else
-    if (tem_comando("sha256sum") && capturar_cmd("sha256sum '" + p.string() + "'", out))
+    if (tem_comando("sha256sum") && capturar_cmd("sha256sum " + aspas(p.string()), out))
     {
         auto sp = out.find(' ');
         if (sp != std::string::npos)
@@ -386,7 +397,7 @@ std::string sha256_arquivo(const fs::path &p)
                 return hex;
         }
     }
-    if (tem_comando("shasum") && capturar_cmd("shasum -a 256 '" + p.string() + "'", out))
+    if (tem_comando("shasum") && capturar_cmd("shasum -a 256 " + aspas(p.string()), out))
     {
         auto sp = out.find(' ');
         if (sp != std::string::npos)
@@ -544,6 +555,8 @@ void usage_update()
         << "  check   Apenas consulta a versao remota (nao instala)\n"
         << "  --yes   Instala sem perguntar (scripts/CI)\n"
         << "\n"
+        << "Saida de 'check': 0 = atualizado, 2 = ha versao nova, 1 = erro\n"
+        << "\n"
         << "Fonte: https://github.com/" << repo_slug() << "/releases/latest\n"
         << "Override: CODECTX_UPDATE_REPO=owner/repo\n";
 }
@@ -610,6 +623,14 @@ int update_cmp_semver_publico(int a0, int a1, int a2, int b0, int b1, int b2)
 
 std::string update_nome_artefato_publico() { return nome_artefato_esperado(); }
 
+std::vector<std::pair<std::string, std::string>> update_json_assets_publico(const std::string &json)
+{
+    std::vector<std::pair<std::string, std::string>> out;
+    for (const auto &a : json_assets(json))
+        out.emplace_back(a.name, a.url);
+    return out;
+}
+
 int comando_update(int argc, char *argv[])
 {
     bool so_check = false;
@@ -671,7 +692,7 @@ int comando_update(int argc, char *argv[])
               << "\n";
 
     if (so_check)
-        return EXIT_SUCCESS; // exit 0 = check ok; há update (scripts podem comparar)
+        return EXIT_UPDATE_DISPONIVEL;
 
     const std::string artefato = nome_artefato_esperado();
     if (artefato.empty())

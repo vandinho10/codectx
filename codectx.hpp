@@ -126,5 +126,7 @@ int comando_update(int argc, char *argv[]);
 bool update_parse_semver_publico(const std::string &s, int &maj, int &min, int &pat);
 int update_cmp_semver_publico(int a0, int a1, int a2, int b0, int b1, int b2);
 std::string update_nome_artefato_publico();
+// Lista (nome, url) dos assets extraídos do JSON de uma release.
+std::vector<std::pair<std::string, std::string>> update_json_assets_publico(const std::string &json);
 
 } // namespace codectx

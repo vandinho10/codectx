@@ -47,9 +47,9 @@ RESUMO: 219 ok, 0 falhas
 Para validar manualmente o comportamento do binário:
 
 ```bash
-./codectx --version           # codectx v1.4.0
+./codectx --version           # codectx v1.4.1
 ./codectx --help              # ajuda
-make version                  # codectx v1.4.0 (via Makefile)
+make version                  # codectx v1.4.1 (via Makefile)
 ```
 
 ---

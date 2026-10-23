@@ -2,7 +2,26 @@
 
 > Planejamento da **atividade em execução**. Atualizado a cada novo planejamento.
 
-## Atividade em execução: Documentação da v1.4 e publicação de binários
+## Atividade em execução: Instalador em local padrão
+
+### Objetivo
+Instalar o binário numa pasta do usuário (Linux `~/.local/bin`, Windows
+`%LOCALAPPDATA%\codectx`) para que o `codectx update` consiga se substituir
+sem sudo/admin.
+
+### Decisões
+- Script por plataforma (`scripts/install.sh` / `install.ps1`) que instala ou
+  atualiza; `upgrade-to-1.4.*` viram atalhos para eles.
+- `.deb`/MSI descartados: o gerenciador de pacotes passaria a ser dono do
+  binário e conflitaria com o autoupdate. Scoop/winget ficam como opção futura.
+- `make install` passa a usar `PREFIX ?= ~/.local`.
+
+### Status
+- [x] Scripts de instalação (testados em Linux; `.ps1` testado com pwsh no Linux).
+- [x] Makefile (`PREFIX`, `uninstall`), README e CHANGELOG.
+- [ ] Validar `install.ps1` num Windows real (PATH do usuário).
+
+## Atividade anterior: Documentação da v1.4 e publicação de binários — ✅ concluída
 
 ### Objetivo
 Atualizar o README para a v1.4.0 (download dos binários da release,

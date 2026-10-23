@@ -4,6 +4,22 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`) com [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
+## [Não lançado]
+
+### Adicionado
+- **Instalador** `scripts/install.sh` (Linux) e `scripts/install.ps1`
+  (Windows): instala na pasta do usuário (`~/.local/bin` /
+  `%LOCALAPPDATA%\codectx`), sem sudo/admin, adiciona ao `PATH` e confere o
+  `SHA256SUMS`. Se o `codectx` já estiver instalado, atualiza no mesmo caminho.
+- `make uninstall`.
+
+### Alterado
+- `make install` instala em `~/.local/bin` por padrão (sem sudo), para o
+  `codectx update` conseguir se substituir. `PREFIX`/`BINDIR`/`DESTDIR`
+  permitem outro destino (ex.: `sudo make install PREFIX=/usr/local`).
+- `scripts/upgrade-to-1.4.sh` / `.ps1` viram atalhos para os novos scripts
+  (as URLs antigas continuam funcionando).
+
 ## [1.4.1] - 2026-10-23
 
 ### Corrigido

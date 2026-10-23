@@ -41,7 +41,7 @@ make sanitize     # compila os testes com AddressSanitizer + UndefinedBehaviorSa
 Exemplo de saída da suíte:
 
 ```
-RESUMO: 219 ok, 0 falhas
+RESUMO: 223 ok, 0 falhas
 ```
 
 Para validar manualmente o comportamento do binário:
@@ -213,7 +213,10 @@ output=contexto_ia.txt
 ## ⚙️ Principais Funcionalidades
 
 * 🎯 **Filtros Avançados:** Selecione exatamente o que quer ver usando *Whitelists* de arquivos (`-f`) e extensões (`-e`).
-* 🛡️ **Blacklist Inteligente:** Ignora automaticamente bibliotecas pesadas, arquivos minificados, mídias visuais e binários (`.bin`, `.o`, `.a`, `.so`, `.exe`, imagens, vídeos etc.).
+* 🛡️ **Blacklist Inteligente:** Ignora automaticamente bibliotecas pesadas, arquivos minificados, mídias visuais e binários (`.bin`, `.o`, `.a`, `.so`, `.exe`, imagens, vídeos etc.), inclusive executáveis sem extensão (detecção por byte nulo).
+* 🔐 **Segredos Bloqueados:** `.env*`, `*.pem`/`*.key`, `id_rsa*`, `.npmrc`, `credentials.json` e similares nunca entram na saída.
+* 🔁 **Saída Reproduzível:** arquivos ordenados e deduplicados, com caminhos relativos ao diretório atual.
+* 🔄 **Autoatualização:** `codectx update` baixa a última release e confere o `SHA256SUMS`.
 * 🧩 **Multi-Targeting:** Expanda seu escopo de busca dinamicamente (`-a`).
 * 📄 **Pronto para Exportação:** Relatórios com delimitadores claros e organizados para cada arquivo processado.
 
@@ -229,7 +232,8 @@ codectx/
 ├── config.cpp          # configuração persistente (níveis global/local, subcomando config)
 ├── update.cpp          # subcomando update (GitHub Releases, SHA256SUMS, SemVer)
 ├── scripts/            # install.sh / install.ps1 (instalador e atualizador externo)
-├── docs/               # documentação técnica
+│                       # upgrade-to-1.4.* (atalhos mantidos por compatibilidade)
+├── docs/README.md      # documentação técnica (CLI, comportamento, códigos de saída)
 ├── tests/
 │   ├── test_framework.hpp   # mini framework de testes (registro + CHECK)
 │   └── codectx_tests.cpp    # suíte table-driven (unitários + integração)

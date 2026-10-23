@@ -4,6 +4,15 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`) com [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
+## [Não lançado]
+
+### Documentação
+- `docs/README.md` reescrito para a v1.4.1: todas as opções da CLI,
+  subcomandos `config`/`update`, códigos de saída, caminhos de configuração,
+  destinos de instalação e fluxo de release.
+- README: novas funcionalidades (bloqueio de segredos, detecção de binário,
+  saída reproduzível, autoatualização) e contagem de testes atualizada.
+
 ## [1.4.1] - 2026-10-23
 
 ### Adicionado

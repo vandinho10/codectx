@@ -21,11 +21,18 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Barra de progresso deixa o Invoke-WebRequest muito lento no PowerShell 5.1
+$ProgressPreference = 'SilentlyContinue'
+# PowerShell 5.1 / .NET antigo pode não negociar TLS 1.2 por padrão (GitHub exige)
+try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+} catch {}
 
 function Write-Ok($m)   { Write-Host "  OK    $m" -ForegroundColor Green }
 function Write-Info($m) { Write-Host "  ->    $m" -ForegroundColor Cyan }
 function Write-Warn($m) { Write-Host "  !     $m" -ForegroundColor Yellow }
-function Die($m)        { Write-Host "  ERRO  $m" -ForegroundColor Red; exit 1 }
+# Não usa `exit`: sob `irm | iex` isso fecharia a janela do PowerShell.
+function Die($m)        { throw $m }
 
 function Find-CodectxBinary {
     param([string]$Explicit)
@@ -84,114 +91,139 @@ function Test-SemVerLessThan([string]$A, [string]$B) {
     return $false
 }
 
-# --- main ---
-$bin = Find-CodectxBinary -Explicit $BinPath
-$artifact = Get-ArtifactName
-$localVer = Get-LocalVersion -Bin $bin
+function Invoke-Upgrade {
+    $bin = Find-CodectxBinary -Explicit $BinPath
+    $artifact = Get-ArtifactName
+    $localVer = Get-LocalVersion -Bin $bin
+    $Tag = $script:Tag
 
-Write-Info "Binario:  $bin"
-Write-Info "Versao:   $localVer"
-Write-Info "Artefato: $artifact"
-Write-Info "Repo:     $Repo"
+    Write-Info "Binario:  $bin"
+    Write-Info "Versao:   $localVer"
+    Write-Info "Artefato: $artifact"
+    Write-Info "Repo:     $Repo"
 
-if (-not $Tag) {
-    Write-Info "Consultando releases/latest ..."
-    $api = "https://api.github.com/repos/$Repo/releases/latest"
-    $headers = @{
-        Accept = 'application/vnd.github+json'
-        'User-Agent' = 'codectx-upgrade-script'
+    if (-not $Tag) {
+        Write-Info "Consultando releases/latest ..."
+        $api = "https://api.github.com/repos/$Repo/releases/latest"
+        $headers = @{
+            Accept = 'application/vnd.github+json'
+            'User-Agent' = 'codectx-upgrade-script'
+        }
+        $rel = Invoke-RestMethod -Uri $api -Headers $headers
+        $Tag = $rel.tag_name
     }
-    $rel = Invoke-RestMethod -Uri $api -Headers $headers
-    $Tag = $rel.tag_name
-}
-if (-not $Tag) { Die 'nao foi possivel obter a tag da release' }
+    if (-not $Tag) { Die 'nao foi possivel obter a tag da release' }
 
-$remoteVer = $Tag.TrimStart('v')
-Write-Info "Remoto:   $Tag"
+    $remoteVer = $Tag.TrimStart('v')
+    Write-Info "Remoto:   $Tag"
 
-if ($localVer -ne 'desconhecida' -and -not (Test-SemVerLessThan $localVer $remoteVer)) {
-    Write-Ok "Ja esta em $localVer (>= $remoteVer). Nada a fazer."
-    exit 0
-}
-
-if (-not $Yes) {
-    $resp = Read-Host "Atualizar $localVer → $Tag em $bin? [s/N]"
-    if ($resp -notmatch '^[sSyY]') {
-        Write-Host 'Cancelado.'
-        exit 0
+    if ($localVer -ne 'desconhecida' -and -not (Test-SemVerLessThan $localVer $remoteVer)) {
+        Write-Ok "Ja esta em $localVer (>= $remoteVer). Nada a fazer."
+        return 0
     }
-}
 
-$tmp = Join-Path $env:TEMP ("codectx-upgrade-" + [guid]::NewGuid().ToString('N') + '.exe')
-$assetUrl = "https://github.com/$Repo/releases/download/$Tag/$artifact"
-$sumsUrl  = "https://github.com/$Repo/releases/download/$Tag/SHA256SUMS"
+    if (-not $Yes) {
+        $resp = Read-Host "Atualizar $localVer -> $Tag em ${bin}? [s/N]"
+        if ("$resp" -notmatch '^[sSyY]') {
+            Write-Host 'Cancelado.'
+            return 0
+        }
+    }
 
-try {
-    Write-Info "Baixando $assetUrl"
-    Invoke-WebRequest -Uri $assetUrl -OutFile $tmp -UseBasicParsing
+    $id = [guid]::NewGuid().ToString('N')
+    $tmp = Join-Path $env:TEMP ("codectx-upgrade-$id.exe")
+    $tmpSums = Join-Path $env:TEMP ("codectx-upgrade-$id.sums")
+    $assetUrl = "https://github.com/$Repo/releases/download/$Tag/$artifact"
+    $sumsUrl  = "https://github.com/$Repo/releases/download/$Tag/SHA256SUMS"
 
     try {
-        $sums = Invoke-WebRequest -Uri $sumsUrl -UseBasicParsing
-        Write-Info 'Verificando SHA256...'
-        $expected = $null
-        foreach ($line in ($sums.Content -split "`n")) {
-            $line = $line.Trim()
-            if (-not $line -or $line.StartsWith('#')) { continue }
-            $parts = $line -split '\s+', 2
-            if ($parts.Count -lt 2) { continue }
-            $name = $parts[1].Trim().TrimStart('*')
-            if ($name -eq $artifact -or $name.EndsWith("/$artifact")) {
-                $expected = $parts[0].Trim().ToLowerInvariant()
-                break
-            }
-        }
-        if ($expected) {
-            $hash = (Get-FileHash -LiteralPath $tmp -Algorithm SHA256).Hash.ToLowerInvariant()
-            if ($hash -ne $expected) {
-                Die "SHA256 nao confere (esperado $expected, obtido $hash)"
-            }
-            Write-Ok 'SHA256 OK'
-        } else {
-            Write-Warn "hash de $artifact nao esta em SHA256SUMS"
-        }
-    } catch {
-        Write-Warn 'SHA256SUMS ausente ou inacessivel nesta release'
-    }
+        Write-Info "Baixando $assetUrl"
+        Invoke-WebRequest -Uri $assetUrl -OutFile $tmp -UseBasicParsing
 
-    $backup = "$bin.old"
-    if (Test-Path -LiteralPath $bin) {
+        # SHA256SUMS vem como application/octet-stream: no PowerShell 5.1 o
+        # .Content seria byte[]. Grava em arquivo e lê como texto.
+        $temSums = $true
         try {
-            Copy-Item -LiteralPath $bin -Destination $backup -Force
+            Invoke-WebRequest -Uri $sumsUrl -OutFile $tmpSums -UseBasicParsing
         } catch {
-            Write-Warn "nao foi possivel criar backup .old (arquivo em uso?): $_"
+            $temSums = $false
+            Write-Warn 'SHA256SUMS ausente ou inacessivel nesta release'
+        }
+
+        if ($temSums) {
+            Write-Info 'Verificando SHA256...'
+            $expected = $null
+            foreach ($line in (Get-Content -LiteralPath $tmpSums)) {
+                $line = $line.Trim()
+                if (-not $line -or $line.StartsWith('#')) { continue }
+                $parts = $line -split '\s+', 2
+                if ($parts.Count -lt 2) { continue }
+                $name = $parts[1].Trim().TrimStart('*')
+                if ($name -eq $artifact -or $name.EndsWith("/$artifact")) {
+                    $expected = $parts[0].Trim().ToLowerInvariant()
+                    break
+                }
+            }
+            if ($expected) {
+                $hash = (Get-FileHash -LiteralPath $tmp -Algorithm SHA256).Hash.ToLowerInvariant()
+                if ($hash -ne $expected) {
+                    Die "SHA256 nao confere (esperado $expected, obtido $hash)"
+                }
+                Write-Ok 'SHA256 OK'
+            } else {
+                Write-Warn "hash de $artifact nao esta em SHA256SUMS"
+            }
+        }
+
+        $backup = "$bin.old"
+        if (Test-Path -LiteralPath $bin) {
+            try {
+                Copy-Item -LiteralPath $bin -Destination $backup -Force
+            } catch {
+                Write-Warn "nao foi possivel criar backup .old (arquivo em uso?): $_"
+            }
+        }
+
+        # Tenta substituir; se o .exe estiver em uso, deixa o novo ao lado.
+        try {
+            Move-Item -LiteralPath $tmp -Destination $bin -Force
+            Write-Ok "Atualizado: $bin"
+        } catch {
+            $side = "$bin.new.exe"
+            Move-Item -LiteralPath $tmp -Destination $side -Force
+            Write-Warn "Nao foi possivel sobrescrever o .exe em uso."
+            Write-Info "Novo binario salvo em: $side"
+            Write-Info "Feche terminais que usam codectx e rode:"
+            Write-Host "  Move-Item -Force '$side' '$bin'"
+            return 1
+        }
+
+        if (Test-Path -LiteralPath $backup) {
+            Write-Info "Backup:    $backup"
+        }
+        try {
+            $nv = & $bin --version 2>$null
+            Write-Info "Nova versao: $nv"
+        } catch {}
+        Write-Info 'Teste: codectx update check'
+        return 0
+    }
+    finally {
+        foreach ($f in @($tmp, $tmpSums)) {
+            if (Test-Path -LiteralPath $f) {
+                Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue
+            }
         }
     }
-
-    # Tenta substituir; se o .exe estiver em uso, deixa o novo ao lado.
-    try {
-        Move-Item -LiteralPath $tmp -Destination $bin -Force
-        Write-Ok "Atualizado: $bin"
-    } catch {
-        $side = "$bin.new.exe"
-        Move-Item -LiteralPath $tmp -Destination $side -Force
-        Write-Warn "Nao foi possivel sobrescrever o .exe em uso."
-        Write-Info "Novo binario salvo em: $side"
-        Write-Info "Feche terminais que usam codectx e rode:"
-        Write-Host "  Move-Item -Force '$side' '$bin'"
-        exit 1
-    }
-
-    if (Test-Path -LiteralPath $backup) {
-        Write-Info "Backup:    $backup"
-    }
-    try {
-        $nv = & $bin --version 2>$null
-        Write-Info "Nova versao: $nv"
-    } catch {}
-    Write-Info 'Teste: codectx update check'
 }
-finally {
-    if (Test-Path -LiteralPath $tmp) {
-        Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
-    }
+
+# --- main ---
+$code = 1
+try {
+    $code = Invoke-Upgrade
+} catch {
+    Write-Host "  ERRO  $($_.Exception.Message)" -ForegroundColor Red
+    $code = 1
 }
+# Só encerra o processo quando rodado como arquivo; sob `irm | iex` apenas retorna.
+if ($PSCommandPath) { exit $code }

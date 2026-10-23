@@ -4,5 +4,5 @@
 
 ## Pendências
 
-- [ ] Publicar binário `codectx-linux-amd64` versionado em release do GitHub.
+- [x] Publicar binários versionados em release do GitHub via Actions (`codectx-linux-x86_64|aarch64|arm32`, `codectx-windows-amd64|x86.exe` + `SHA256SUMS`; confirmado na v1.4.0).
 - [ ] Expandir testes de sanitização do filtro `-e` (fuzz).

@@ -4,7 +4,7 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/) (`MAJOR.MINOR.PATCH`) com [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
 
-## [Não lançado]
+## [1.4.1] - 2026-10-23
 
 ### Adicionado
 - **Instalador** `scripts/install.sh` (Linux) e `scripts/install.ps1`
@@ -19,8 +19,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
   permitem outro destino (ex.: `sudo make install PREFIX=/usr/local`).
 - `scripts/upgrade-to-1.4.sh` / `.ps1` viram atalhos para os novos scripts
   (as URLs antigas continuam funcionando).
-
-## [1.4.1] - 2026-10-23
+- `codectx update check` retorna **2** quando há versão nova (0 = atualizado,
+  1 = erro), para uso em scripts.
 
 ### Corrigido
 - **`codectx update`** não encontrava nenhum asset na release: o parse do JSON
@@ -38,10 +38,6 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
   conteúdo vinha como bytes e a checagem era pulada); força TLS 1.2; prompt
   mostrava caminho vazio (`$bin?` era lido como variável) e prosseguia sem
   confirmação quando não havia entrada.
-
-### Alterado
-- `codectx update check` retorna **2** quando há versão nova (0 = atualizado,
-  1 = erro), para uso em scripts.
 
 ## [1.4.0] - 2026-10-20
 
